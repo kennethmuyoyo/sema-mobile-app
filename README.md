@@ -1,4 +1,4 @@
-# Sema — Architecture & References
+# Sema(Signvrse) — Architecture & References
 
 This document describes the technical architecture of Sema, the two pipelines that compose the system, the reference implementations we draw from, and the licensing constraints on the datasets we use.
 
