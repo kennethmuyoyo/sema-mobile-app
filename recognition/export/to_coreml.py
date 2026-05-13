@@ -39,7 +39,9 @@ def main() -> int:
     ap.add_argument("--ckpt", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--seq-len", type=int, default=256)
-    ap.add_argument("--parity-tol", type=float, default=1e-3)
+    # Default tolerance reflects FP16 ANE compute. Drop to ~1e-4 if you
+    # convert with FLOAT32 precision and want stricter parity.
+    ap.add_argument("--parity-tol", type=float, default=5e-2)
     ap.add_argument("--minimum-deployment-target", default="iOS17")
     args = ap.parse_args()
 
