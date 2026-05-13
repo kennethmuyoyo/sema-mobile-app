@@ -13,9 +13,30 @@ Per the design principle in [../README.md](../README.md), grammar-aware translat
 ## What this folder produces
 
 - A LoRA/QLoRA adapter on Gemma 4 E4B trained via Unsloth.
-- A merged + INT4-quantised LiteRT export for on-device use on Android.
+- A merged + INT4-quantised **LiteRT (`.tflite`) artefact** consumable by the iOS client.
 - Eval reports (BLEU / chrF / human-judged) over a held-out split of Motion-S.
 - A shared gloss vocabulary file consumed by `../recognition/`.
+
+## Starting point: Google AI Edge published Gemma
+
+Google AI Edge publishes **Gemma 4 E4B in LiteRT-ready `.tflite` form**, INT4-quantised, with a working runtime path for mobile clients. We start from those weights, apply a LoRA adapter trained on Motion-S, and re-merge. This is dramatically cheaper than converting Gemma to `.tflite` from scratch and avoids known sharp edges in the converter.
+
+On iOS specifically, **assume LiteRT runs on CPU** unless we verify otherwise. The Google AI Edge GPU/ANE delegate for iOS is newer than the Android one and the supported op set has gaps. Memory budget assumptions in `../mobile-app/README.md` are built on that conservative assumption.
+
+### Server-fallback contract (Plan B)
+
+If on-device Gemma proves infeasible on iOS (memory pressure on 6 GB devices, op-coverage gaps, or unacceptable latency), the iOS client must be able to fall back to a server endpoint that exposes the same I/O shape. The contract:
+
+```
+POST /translate
+Headers: Authorization: Bearer <token>, Content-Type: application/json
+Body:    {"task": "KSL->EN" | "EN->KSL" | "KSL->SW" | "SW->KSL",
+          "input": "<gloss-or-sentence>",
+          "max_tokens": 64}
+Reply:   {"output": "<translated-string>", "model_version": "..."}
+```
+
+Both the on-device and server paths must share the merged Gemma weights so behaviour is identical. The fallback is a deployment switch, not a different model.
 
 ## Intended layout
 
@@ -47,8 +68,8 @@ gemma-glossing/
 │   └── error_analysis.ipynb
 ├── export/
 │   ├── quantize_int4.py
-│   ├── to_litert.py               # Google AI Edge LiteRT
-│   └── verify_parity.py           # CPU reference vs LiteRT outputs
+│   ├── to_litert.py               # Google AI Edge LiteRT (.tflite)
+│   └── verify_parity.py           # PyTorch reference vs LiteRT outputs
 └── notebooks/
     └── prompt_exploration.ipynb
 ```
@@ -59,5 +80,5 @@ gemma-glossing/
 
 ## Inputs and outputs
 
-- **Path A direction:** input gloss tokens from `../recognition/`, output a fluent EN or SW sentence for the Android TTS in `../mobile-app/`.
-- **Path B direction:** input EN or SW text from the ASR in `../mobile-app/`, output a KSL gloss sequence for the renderer in `../generation/`.
+- **Path A direction:** input gloss tokens from `../recognition/`, output a fluent EN or SW sentence for AVSpeechSynthesizer in `../mobile-app/`.
+- **Path B direction:** input EN or SW text from SFSpeechRecognizer in `../mobile-app/`, output a KSL gloss sequence for the renderer in `../generation/`.

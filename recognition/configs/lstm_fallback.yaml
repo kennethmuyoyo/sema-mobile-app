@@ -1,0 +1,47 @@
+data:
+  root: /Users/ken/sema-mobile-app/data
+  features_dir: landmarks
+  train_csv: train.csv
+  vocab_path: data/vocab/gloss_vocab.json
+  splits_dir: data/splits
+  feature_dim: 180
+  max_frames: 512
+  min_gloss_count: 1
+  return_rvq_aux: false
+
+augment:
+  enabled: true
+  sigma_jitter: 0.005
+  body_dropout_p: 0.05
+  hand_dropout_p: 0.12
+  temporal_mask_max: 8
+  affine_rot_deg: 10.0
+  affine_trans: 0.05
+  affine_scale: 0.05
+  frame_drop_p: 0.15
+  append_mask_channel: true
+
+model:
+  name: lstm
+  hidden: 256
+  n_layers: 2
+  bidirectional: true
+  dropout: 0.1
+  input_norm: true
+  aux_rvq:
+    enabled: false
+    codebook_size: 512
+    loss_weight: 0.1
+
+train:
+  batch_size: 16
+  grad_clip: 1.0
+  lr: 5.0e-4
+  weight_decay: 0.01
+  warmup_steps: 500
+  total_steps: 20000
+  eval_every: 1000
+  log_every: 50
+  seed: 42
+  num_workers: 2
+  ckpt_dir: checkpoints/lstm_fallback

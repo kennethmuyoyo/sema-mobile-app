@@ -8,22 +8,23 @@ sema-mobile-app/
 ├── STRUCTURE.md           # (this file) repository map
 │
 ├── recognition/           # Path A, stage 1: signs → gloss tokens
-│   │                      # MediaPipe Holistic → small temporal model
-│   │                      # Trains and exports the on-device gloss tagger
+│   │                      # MediaPipe-equivalent landmarks → small temporal model
+│   │                      # Trains and exports the on-device gloss tagger (CoreML)
 │   └── README.md
 │
 ├── gemma-glossing/        # Path A stage 2 + Path B stage 2 (shared model)
 │   │                      # Gemma 4 E4B fine-tuned bidirectionally on
-│   │                      # KSL gloss ↔ English/Swahili sentence pairs
+│   │                      # KSL gloss ↔ English/Swahili sentence pairs (LiteRT)
 │   └── README.md
 │
 ├── generation/            # Path B, stage 3: gloss → animated signing avatar
-│   │                      # ASR glue + stickman renderer over the
-│   │                      # KSL Word-Based Pose Dataset
+│   │                      # Pose-clip retrieval, stitching, and the
+│   │                      # SwiftUI-renderer contract consumed by mobile-app/
 │   └── README.md
 │
-└── mobile-app/            # Android client. Orchestrates camera, mic,
-    │                      # MediaPipe, LiteRT models, TTS, and renderer.
+└── mobile-app/            # iOS client (SwiftUI). Orchestrates camera, mic,
+    │                      # MediaPipe iOS, CoreML recognizer, LiteRT Gemma,
+    │                      # AVSpeechSynthesizer, and the avatar renderer.
     └── README.md
 ```
 
@@ -32,52 +33,54 @@ sema-mobile-app/
 ### Path A — KSL recognition (Deaf → hearing)
 
 ```
-[camera frames]
+[iPhone front camera]
         │
         ▼
-mobile-app/ ── runs MediaPipe Holistic on-device
+mobile-app/ ── runs MediaPipe Tasks for iOS (Holistic)
         │
         ▼
-recognition/ ── gloss tagger (LiteRT) classifies pose sequence → gloss tokens
+recognition/ ── gloss tagger (CoreML .mlpackage) classifies landmark sequence → gloss tokens
         │
         ▼
 gemma-glossing/ ── Gemma 4 E4B (LiteRT INT4) translates gloss → fluent EN/SW
         │
         ▼
-mobile-app/ ── Android system TTS speaks the sentence
+mobile-app/ ── AVSpeechSynthesizer speaks the sentence
 ```
 
 ### Path B — Speech generation (hearing → Deaf)
 
 ```
-[microphone audio]
+[iPhone microphone]
         │
         ▼
-mobile-app/ ── Whisper-tiny / Android STT produces text
+mobile-app/ ── SFSpeechRecognizer (continuous) produces text
         │
         ▼
 gemma-glossing/ ── Gemma 4 E4B translates EN/SW → KSL gloss sequence
         │
         ▼
-generation/ ── stickman renderer looks up each gloss in the KSL Pose
-        │      Dataset, stitches the pose sequences, plays the animation
+generation/ ── on-device pose DB returns per-gloss clips; stitcher
+        │      produces a continuous keypoint stream
         ▼
-mobile-app/ ── displays the animated signing avatar
+mobile-app/ ── SwiftUI / SpriteKit skeleton renders the animated avatar
 ```
 
 ## Ownership at a glance
 
 | Concern | Folder | Notes |
 |---|---|---|
-| Pose extraction (MediaPipe) | `mobile-app/` | Runs on-device; no training artefact |
-| Gloss tagger (training + export) | `recognition/` | Transformer over keypoints; LSTM fallback |
-| Gloss ↔ sentence translator | `gemma-glossing/` | Single model, both directions, task tokens |
-| ASR (Whisper / system STT) | `mobile-app/` | Integration only; no training here |
-| Stickman renderer + pose library | `generation/` | Retrieval + stitching; no motion synthesis |
-| TTS | `mobile-app/` | Android system TTS |
-| App orchestration / UI | `mobile-app/` | Kotlin / Android |
+| Pose extraction (MediaPipe Tasks iOS) | `mobile-app/` | Runs on-device; no training artefact |
+| Gloss tagger (training + export) | `recognition/` | Transformer over landmark vectors; LSTM fallback. CoreML `.mlpackage` is the primary export; `to_litert.py` retained as Android-fallback optionality |
+| Gloss ↔ sentence translator | `gemma-glossing/` | Single model, both directions, task tokens. LiteRT `.tflite` (Google AI Edge) |
+| ASR (SFSpeechRecognizer continuous) | `mobile-app/` | Integration only; no training here |
+| Pose DB + stitching | `generation/` | Retrieval over per-gloss clips bundled in-app, int8-quantized |
+| Avatar renderer | `mobile-app/` (impl) + `generation/` (contract) | SwiftUI / SpriteKit skeleton |
+| TTS (AVSpeechSynthesizer) | `mobile-app/` | Apple-native, no extra model |
+| App orchestration / UI | `mobile-app/` | Swift / SwiftUI / Xcode |
 
 ## A note on what is *not* in this repo
 
 - Raw datasets (Motion-S, KSL Word-Based Pose Dataset) are external. Each folder's README explains how to acquire and stage them.
-- Pre-trained third-party weights (WLASL Pose-TGCN, Gemma 4 E4B base) are downloaded by the training scripts; they are not committed.
+- Pre-trained third-party weights (WLASL Pose-TGCN, Gemma 4 E4B base, Google AI Edge published Gemma `.tflite`) are downloaded by the training/export scripts; they are not committed.
+- The iOS app's `Sema.xcodeproj`, build settings, and code-signing config live in `mobile-app/`. They are created on first build, not by the scaffolds in this repo.

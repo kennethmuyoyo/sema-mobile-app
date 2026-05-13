@@ -1,0 +1,51 @@
+data:
+  root: /Users/ken/sema-mobile-app/data
+  features_dir: landmarks            # written by data/bvh_to_landmarks.py
+  train_csv: train.csv
+  vocab_path: data/vocab/gloss_vocab.json
+  splits_dir: data/splits
+  # 45 joints * (3 coords + 1 mask) = 180 if append_mask_channel; otherwise 135.
+  # Mask channel is part of the augmentation; we use it at train AND inference.
+  feature_dim: 180
+  max_frames: 512
+  min_gloss_count: 1
+  return_rvq_aux: false              # set true to enable the auxiliary RVQ head
+
+augment:
+  enabled: true
+  sigma_jitter: 0.005
+  body_dropout_p: 0.05
+  hand_dropout_p: 0.12
+  temporal_mask_max: 8
+  affine_rot_deg: 10.0
+  affine_trans: 0.05
+  affine_scale: 0.05
+  frame_drop_p: 0.15
+  append_mask_channel: true
+
+model:
+  name: transformer
+  d_model: 256
+  n_heads: 8
+  n_layers: 4
+  ff_dim: 1024
+  dropout: 0.1
+  input_norm: true
+  max_len: 512
+  aux_rvq:                            # null to disable; when on, predicts base_tokens
+    enabled: false
+    codebook_size: 512
+    loss_weight: 0.1
+
+train:
+  batch_size: 16
+  grad_clip: 1.0
+  lr: 3.0e-4
+  weight_decay: 0.01
+  warmup_steps: 1000
+  total_steps: 30000
+  eval_every: 1000
+  log_every: 50
+  seed: 42
+  num_workers: 2
+  ckpt_dir: checkpoints/transformer_base

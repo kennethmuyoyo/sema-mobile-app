@@ -8,10 +8,12 @@ Sema is **not** a single end-to-end model. Gemma 4 — even multimodal Gemma 4 �
 
 Sema therefore decomposes the problem into the two tasks each model class is actually suited to:
 
-1. **Motion recognition (signs → gloss tokens).** Handled by a small specialised temporal model over MediaPipe Holistic keypoints. Not Gemma.
+1. **Motion recognition (signs → gloss tokens).** Handled by a small specialised temporal model over MediaPipe Holistic landmarks. Not Gemma.
 2. **Grammar-aware translation (gloss ↔ spoken-language sentences).** Handled by Gemma 4 E4B, fine-tuned via Unsloth on KSL gloss / English-Swahili sentence pairs.
 
 This decomposition is the project's Cactus-track thesis: route each sub-task to the right kind of model, on-device, with intelligent activation.
+
+The first product is a **native iOS app** with a FaceTime-style UI (large 2D avatar canvas + small front-camera PiP). Both pipelines run concurrently when the app is foregrounded — the user signs while the avatar speaks back, and they can speak while the avatar signs.
 
 ---
 
@@ -20,18 +22,18 @@ This decomposition is the project's Cactus-track thesis: route each sub-task to 
 ### Path A — KSL recognition (Deaf user signs → hearing user hears speech)
 
 ```
-Camera frames
+iPhone front camera (AVCaptureSession)
   ↓
-MediaPipe Holistic
-  → per-frame keypoints (33 body + 21 + 21 hands, optionally face)
+MediaPipe Tasks for iOS — Holistic landmarker
+  → per-frame landmarks (33 body + 21 + 21 hands; face omitted)
   ↓
-Gloss Tagger (small temporal model, ~5 MB, NOT Gemma)
+Gloss Tagger (CoreML, .mlpackage, ~5 MB, NOT Gemma)
   → gloss token stream, e.g. "HOSPITAL TOMORROW I-GO"
   ↓
-Gemma 4 E4B (LiteRT, INT4, fine-tuned via Unsloth)
+Gemma 4 E4B (LiteRT, INT4, fine-tuned via Unsloth, on-device)
   → fluent Swahili / English: "I am going to the hospital tomorrow"
   ↓
-Android TTS
+AVSpeechSynthesizer
   → audio out
 ```
 
@@ -39,37 +41,44 @@ Android TTS
 
 | Piece | Role | Model | Why |
 |---|---|---|---|
-| Pose extraction | Per-frame skeletal keypoints | MediaPipe Holistic | Fast, on-device, well-supported on Android |
-| Gloss tagger | Pose sequence → gloss token | Small Transformer / LSTM over keypoints | Right tool for temporal classification; tiny and quick |
+| Pose extraction | Per-frame landmarks | MediaPipe Tasks for iOS (Holistic) | Stable, on-device, official iOS framework |
+| Gloss tagger | Landmark sequence → gloss token | Small Transformer / LSTM over normalized landmarks | Right tool for temporal classification; tiny and quick; runs on the Neural Engine via CoreML |
 | Translator | Gloss sequence → fluent sentence | Gemma 4 E4B, fine-tuned | True low-resource MT task; KSL grammar ≠ English grammar |
-| TTS | Text → audio | Android system TTS (Swahili / English) | Built-in, no extra model footprint |
+| TTS | Text → audio | AVSpeechSynthesizer (Swahili / English) | Built-in, no extra model footprint |
 
 ### Path B — Speech generation (hearing user speaks → Deaf user sees signs)
 
 ```
-Microphone audio
+iPhone microphone (AVAudioSession .playAndRecord)
   ↓
-Whisper-tiny (or Android on-device STT)
+SFSpeechRecognizer (continuous, on-device)
   → text (Swahili / English)
   ↓
-Gemma 4 E4B (LiteRT, INT4, fine-tuned via Unsloth)
+Gemma 4 E4B (LiteRT, INT4, fine-tuned via Unsloth, on-device)
   → KSL gloss sequence, respecting KSL grammar
     (topicalization, time-before-event, classifier predicates)
   ↓
-Stickman renderer
-  → look up each gloss in the KSL Pose Dataset
-  → stitch pose sequences and play back as animated avatar
+On-device pose database (per-gloss clips, int8-quantized, full vocab bundled)
+  → look up each gloss, stitch pose sequences
+  ↓
+SwiftUI / SpriteKit skeleton renderer
+  → animated 2D signing avatar
 ```
 
 **Pieces:**
 
-| Piece | Role | Model | Why |
+| Piece | Role | Source | Why |
 |---|---|---|---|
-| ASR | Audio → text | Whisper-tiny or Android STT | Swahili support, small, on-device |
+| ASR | Audio → text | SFSpeechRecognizer (continuous) | Swahili + English, free, on-device |
 | Translator | Sentence → gloss sequence | Gemma 4 E4B, fine-tuned (same model as Path A) | Bidirectional fine-tune; KSL grammar generation |
-| Renderer | Gloss sequence → animated stickman | Retrieval + playback from KSL Pose Dataset | Honest, demoable in 7 days, no motion-synthesis model required |
+| Pose DB | Gloss → keypoint clip | Bundled int8 clips per gloss, derived from Motion-S BVH | Honest, demoable, no motion-synthesis model required |
+| Renderer | Keypoint stream → animated avatar | SwiftUI / SpriteKit skeleton, code-built | No third-party rig dependency |
 
 The same fine-tuned Gemma 4 instance serves both directions, with task tokens (`[KSL→EN]`, `[EN→KSL]`, `[KSL→SW]`, `[SW→KSL]`).
+
+### A note on the recognizer's input space
+
+MediaPipe Holistic on iOS emits a fixed landmark layout (33 body + 21 + 21 hands × 3 coords). The recognizer is trained on landmark features projected synthetically from the Motion-S BVH skeletons into the **same** MediaPipe-equivalent joint set, then normalized (torso-anchored origin, shoulder-width scale, 2D + relative-z). This keeps inference-time features dimensionally identical to training features. The recognizer never sees raw camera-space coordinates — training-time augmentation models real MediaPipe jitter and dropout to narrow the sim2real gap. See [`recognition/README.md`](recognition/README.md) for the augmentation contract and [`recognition/eval/real_camera_smoke.md`](recognition/eval/real_camera_smoke.md) for the deployment gate.
 
 ---
 
@@ -101,13 +110,13 @@ These references inform our **modelling choices** at vocabulary scale and provid
 
 ### Temporal-model choice for Sema's gloss tagger
 
-We adopt a **Transformer encoder over MediaPipe Holistic keypoint sequences**, architecturally derived from SLRNet (Khushi-739, 2025) for the pipeline shape and from the Pose-TGCN baseline (Li et al., WACV 2020) for the pose-input modelling. LSTM remains a fallback if Transformer training is unstable on our smaller KSL Pose Dataset.
+We adopt a **Transformer encoder over MediaPipe-equivalent landmark sequences**, architecturally derived from SLRNet (Khushi-739, 2025) for the pipeline shape and from the Pose-TGCN baseline (Li et al., WACV 2020) for the pose-input modelling. LSTM remains a fallback if Transformer training is unstable on our smaller KSL Pose Dataset.
 
 Optional initialisation from WLASL pose-pretrained weights, followed by fine-tuning on the KSL Pose Dataset, is under consideration as a transfer-learning experiment — pose-level features (hand shapes, trajectories) generalise across sign languages at the low level even though the linguistic gloss space differs. **License compatibility for this step must be confirmed before use** (see below).
 
 ### Translation model
 
-Gemma 4 E4B, fine-tuned via Unsloth on AI4KSL English–KSL gloss pairs. Bidirectional with task tokens. Deployed via Google AI Edge LiteRT, INT4 quantised, on Android.
+Gemma 4 E4B, fine-tuned via Unsloth on AI4KSL English–KSL gloss pairs. Bidirectional with task tokens. Deployed via Google AI Edge LiteRT, INT4 quantised, on-device on iOS. (See [`gemma-glossing/README.md`](gemma-glossing/README.md) for the on-iOS LiteRT delegate assumptions and the server-fallback contract.)
 
 ---
 
@@ -117,14 +126,11 @@ Gemma 4 E4B, fine-tuned via Unsloth on AI4KSL English–KSL gloss pairs. Bidirec
 
 | Dataset | Used for | Source | Citation |
 |---|---|---|---|
-| **Motion-S** | Fine-tuning Gemma 4 on KSL gloss ↔ English/Swahili pairs | Signvrse Kaggle Dataset |
-| **KSL Word-Based Pose Dataset** | Training the gloss tagger; rendering the stickman avatar | 
-
-### Optional supplementary dataset
-
+| **Motion-S** | (a) Fine-tuning Gemma 4 on KSL gloss ↔ English/Swahili pairs; (b) deriving synthetic MediaPipe-equivalent landmarks for training the gloss tagger; (c) building the on-device pose-clip database for the avatar | Signvrse Kaggle Dataset | |
+| **KSL Word-Based Pose Dataset** | (Optional supplementary) gloss tagger training; avatar pose clips | | |
 
 ### Licensing
 
-- **Motion-S** — released by Signvrsey; we treat access as research-purpose under the authors' terms. Citation and credit required. Verify any redistribution constraints with the authors before publishing fine-tuned weights derived from this dataset.
+- **Motion-S** — released by Signvrsey; we treat access as research-purpose under the authors' terms. Citation and credit required. Verify any redistribution constraints with the authors before publishing fine-tuned weights or pose-clip bundles derived from this dataset.
 
 This documentation, and the Sema submission, are explicitly non-commercial research artefacts and consistent with all three licences.
