@@ -6,6 +6,9 @@ This file is the map of the repo. Each top-level folder owns one piece of the ar
 sema-mobile-app/
 ├── README.md              # Architecture, pipelines, references, datasets
 ├── STRUCTURE.md           # (this file) repository map
+├── dvc.yaml               # Pipeline DAG (landmarks → vocab → train → export)
+├── docs/
+│   └── data.md            # DVC + Cloudflare R2 team-onboarding flow
 │
 ├── recognition/           # Path A, stage 1: signs → gloss tokens
 │   │                      # MediaPipe-equivalent landmarks → small temporal model
@@ -79,8 +82,8 @@ mobile-app/ ── SwiftUI / SpriteKit skeleton renders the animated avatar
 | TTS (AVSpeechSynthesizer) | `mobile-app/` | Apple-native, no extra model |
 | App orchestration / UI | `mobile-app/` | Swift / SwiftUI / Xcode |
 
-## A note on what is *not* in this repo
+## Where the large files live
 
-- Raw datasets (Motion-S, KSL Word-Based Pose Dataset) are external. Each folder's README explains how to acquire and stage them.
-- Pre-trained third-party weights (WLASL Pose-TGCN, Gemma 4 E4B base, Google AI Edge published Gemma `.tflite`) are downloaded by the training/export scripts; they are not committed.
+- **Cloudflare R2** via **DVC** (`dvc.yaml` + `.dvc` pointer files). See [`docs/data.md`](docs/data.md) for the onboarding flow. `dvc pull` populates `data/`, `recognition/checkpoints/`, `mobile-app/Sema/Models/`, and `mobile-app/Sema/PoseLibrary/` from R2.
+- Pre-trained third-party weights (WLASL Pose-TGCN, Gemma 4 E4B base, Google AI Edge published Gemma `.tflite`) are downloaded by the training/export scripts; they are not tracked in either git or DVC.
 - The iOS app's `Sema.xcodeproj`, build settings, and code-signing config live in `mobile-app/`. They are created on first build, not by the scaffolds in this repo.

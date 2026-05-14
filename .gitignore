@@ -1,3 +1,28 @@
-.data/
-data/
+# Large files are managed by DVC, not git (see docs/data.md).
+# Defensively block everything under data/ and only allow the small DVC
+# bookkeeping files (`.dvc` pointers, per-folder `.gitignore` DVC writes,
+# tiny metadata JSON) through. NEVER remove `/data/**` from this file
+# unless you have audited that DVC has registered every nested folder.
+/data/**
+!/data/.gitignore
+!/data/*.dvc
+!/data/**/.gitignore
+!/data/landmarks_meta.json
 
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+.python-version
+
+# Build / test artefacts
+*.log
+.coverage
+.pytest_cache/

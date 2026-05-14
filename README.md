@@ -120,6 +120,10 @@ Gemma 4 E4B, fine-tuned via Unsloth on AI4KSL English–KSL gloss pairs. Bidirec
 
 ---
 
+## Team setup
+
+Large files (raw motion data, derived landmarks, model checkpoints, exported `.mlpackage` and `.tflite` bundles) are versioned with **DVC** against a **Cloudflare R2** bucket. Onboarding flow + day-to-day workflow live in [`docs/data.md`](docs/data.md); the pipeline DAG is in [`dvc.yaml`](dvc.yaml).
+
 ## Datasets
 
 ### Primary datasets
