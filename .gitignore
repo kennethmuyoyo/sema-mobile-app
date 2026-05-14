@@ -9,6 +9,16 @@
 !/data/**/.gitignore
 !/data/landmarks_meta.json
 
+# Local-only agent skill system — not committed
+.cursor/mcp.json
+AGENTS.md
+.agent-skills/
+.cursor/skills/
+
+# Xcode local user state
+xcuserdata/
+*.xcuserstate
+
 # OS / editor
 .DS_Store
 .idea/
