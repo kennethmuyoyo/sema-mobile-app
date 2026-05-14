@@ -1,3 +1,13 @@
 .data/
 data/
 
+# Local-only agent skill system — not committed
+.cursor/mcp.json
+AGENTS.md
+.agent-skills/
+.cursor/skills/
+
+# Xcode local user state
+xcuserdata/
+*.xcuserstate
+
