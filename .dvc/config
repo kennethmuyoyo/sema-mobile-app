@@ -1,0 +1,5 @@
+[core]
+    remote = r2
+['remote "r2"']
+    url = s3://CHANGE_ME_BUCKET/sema
+    endpointurl = https://CHANGE_ME_ACCOUNT_ID.r2.cloudflarestorage.com
