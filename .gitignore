@@ -1,38 +1,176 @@
-# Large files are managed by DVC, not git (see docs/data.md).
-# Defensively block everything under data/ and only allow the small DVC
-# bookkeeping files (`.dvc` pointers, per-folder `.gitignore` DVC writes,
-# tiny metadata JSON) through. NEVER remove `/data/**` from this file
-# unless you have audited that DVC has registered every nested folder.
+# =============================================================================
+# Data (DVC + Cloudflare R2) — see docs/data.md
+# =============================================================================
+# Large files are managed by DVC, not git. Defensively block everything under
+# data/ and only allow the small DVC bookkeeping files (`.dvc` pointers,
+# per-folder `.gitignore` DVC writes, tiny metadata JSON) through. NEVER
+# remove `/data/**` from this file unless you have audited that DVC has
+# registered every nested folder.
 /data/**
 !/data/.gitignore
 !/data/*.dvc
 !/data/**/.gitignore
 !/data/landmarks_meta.json
 
+# =============================================================================
 # Local-only agent skill system — not committed
+# =============================================================================
 .cursor/mcp.json
 AGENTS.md
 .agent-skills/
 .cursor/skills/
 
-# Xcode local user state
-xcuserdata/
-*.xcuserstate
-
-# OS / editor
+# =============================================================================
+# OS / editor / IDE
+# =============================================================================
 .DS_Store
 .idea/
 .vscode/
 
+# =============================================================================
+# Xcode
+# =============================================================================
+xcuserdata/
+*.xcuserstate
+DerivedData/
+*.xcworkspace/xcuserdata/
+build/
+
+# =============================================================================
 # Python
+# =============================================================================
 __pycache__/
 *.pyc
 *.pyo
 *.egg-info/
 .venv/
+.venv_convert/
+.venv_image/
 .python-version
+.coverage
+.pytest_cache/
 
 # Build / test artefacts
 *.log
-.coverage
-.pytest_cache/
+
+# =============================================================================
+# iOS app — models, data, and large resources
+# =============================================================================
+# The iOS app loads its models and large bundled assets at runtime from
+# `mobile-app/sema/sema/Resources/`. These are produced by the Python pipeline
+# (recognition/, generation/, gemma-glossing/) and either fetched via DVC or
+# regenerated on a workstation; they are never committed.
+mobile-app/sema/sema/Resources/*.gguf
+mobile-app/sema/sema/Resources/*.litertlm
+mobile-app/sema/sema/Resources/*.tflite
+mobile-app/sema/sema/Resources/*.task
+mobile-app/sema/sema/Resources/*.mlmodel
+mobile-app/sema/sema/Resources/*.mlmodelc
+mobile-app/sema/sema/Resources/*.mlpackage/
+mobile-app/sema/sema/Resources/*.mlpackage.bak/
+mobile-app/sema/sema/Resources/*.metadata.json
+mobile-app/sema/sema/Resources/*.metadata.json.bak
+mobile-app/sema/sema/Resources/*.usdz
+mobile-app/sema/sema/Resources/*.usdc
+
+# Pose-library bundles that ship to the device. Regenerated locally from
+# `data/Train` via `generation/pose_library/`; Xcode picks them up at build
+# time. No reason for ~thousands of npz/png blobs to live in git.
+mobile-app/sema/sema/Resources/PoseLibrary/
+mobile-app/sema/sema/Resources/PoseLibraryFull/
+!mobile-app/sema/sema/Resources/PoseLibrary/.gitignore
+!mobile-app/sema/sema/Resources/PoseLibrary/**/.gitignore
+!mobile-app/sema/sema/Resources/PoseLibrary/**/*.dvc
+
+# iOS app icons / xcassets binary payloads. Asset catalog metadata JSON
+# stays tracked; the rendered PNGs are produced/replaced per design pass and
+# do not belong in git history.
+mobile-app/sema/sema/Assets.xcassets/AppIcon.appiconset/*.png
+
+# =============================================================================
+# iOS app — CocoaPods (Podfile committed; install output isn't)
+# =============================================================================
+mobile-app/sema/Pods/
+
+# Ad-hoc zip backups of the project tree — these get created when
+# bundling the app for a share / handoff and should never be committed.
+mobile-app/sema/*.zip
+mobile-app/sema/sema.zip
+
+# =============================================================================
+# iOS app — third-party frameworks
+# =============================================================================
+# llama.cpp prebuilt xcframework — ~200 MB binary, fetched from
+# https://github.com/ggml-org/llama.cpp/releases. Anyone setting up the
+# project should re-download it; see mobile-app/sema/Frameworks/README.md.
+mobile-app/sema/Frameworks/llama.xcframework/
+
+# =============================================================================
+# recognition/ — training pipeline (data, training scripts, checkpoints)
+# =============================================================================
+# This repo ships the *contract* for the recogniser (configs, eval harness,
+# tests, export script, README) but not the training pipeline itself. The
+# data ingestion / vocab / dataset code, the training loop, and the trained
+# checkpoints are all reproducible from the Python sources kept locally and
+# the DVC-tracked data under /data/. Keeping them out of git keeps reviews
+# focused on what runs on-device.
+recognition/data/
+recognition/training/
+recognition/checkpoints/
+
+# Third-party model weight caches downloaded on first run (SMPL-X body
+# model, etc.). These exceed GitHub's 100 MB file limit and have their own
+# licensing — re-download from the upstream source on each workstation.
+recognition/.cache/
+
+# =============================================================================
+# generation/ — pose-library generation outputs
+# =============================================================================
+# Local working copy of the pose-library generator outputs and the retarget
+# tooling. The pipeline runs locally to produce the bundle payload above;
+# the staging directories and the retargeter itself stay off the repo so
+# generation/ only carries durable code (build_index.py, build_full_library.py,
+# build_single_gloss.py, pick_best_takes.py, READMEs, ios_contract.md).
+generation/pose_library/clips/
+generation/pose_library/full/
+generation/pose_library/rotations/
+generation/pose_library/index.json
+generation/pose_library/retarget_to_target.py
+generation/pose_library/target_bind_pose.json
+
+# LoRA → TFLite conversion artefacts (heavy intermediate files; the final
+# weights that ship in the app are tracked separately via DVC / fetched at
+# install time).
+generation/llm_export/build/
+generation/llm_export/merged_model/
+generation/llm_export/lora/
+generation/llm_export/*.tflite
+
+# =============================================================================
+# gemma-glossing/ — LoRA merge / export artefacts
+# =============================================================================
+# Merged base+LoRA weights and exported runtimes are produced locally on a
+# CUDA box (or Kaggle/Colab) and either uploaded to R2 or copied directly
+# into mobile-app/sema/sema/Resources/. None of these belong in git.
+gemma-glossing/*.litertlm
+gemma-glossing/*.gguf
+gemma-glossing/*.tflite
+gemma-glossing/*.safetensors
+gemma-glossing/*.bin
+gemma-glossing/*.pt
+gemma-glossing/*.pth
+gemma-glossing/*.ckpt
+gemma-glossing/*.xnnpack_cache_*
+gemma-glossing/merged_model/
+gemma-glossing/lora/
+gemma-glossing/checkpoints/
+
+# =============================================================================
+# Ad-hoc scripts at the repo root
+# =============================================================================
+# Single-session debugging scripts that live at the repo root. Anything
+# truly reusable belongs under generation/ or recognition/, where it gets
+# a real path and a code-review.
+/fix_*.py
+/fix_*.swift
+/clean_build.sh

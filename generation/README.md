@@ -19,29 +19,35 @@ ASR (SFSpeechRecognizer continuous) is upstream of this folder, but its integrat
 
 Full vocabulary (≈ 3,800 unique gloss tokens), ~3 s average per clip at 24 fps, 47 joints × 3 coords × int8 ≈ 27 KB/clip → **~100 MB** total. Acceptable inside an App Store binary; if it grows, fall back to iOS on-demand resources keyed by gloss token. Document the actual bundle size in `../mobile-app/README.md` once `pose_library/build_index.py` has run.
 
-## Intended layout
+## Repo layout
 
 ```
 generation/
 ├── README.md
-├── requirements.txt
-├── pose_library/
-│   ├── build_index.py             # ingest Motion-S → quantised per-gloss clips
-│   ├── index.json                 # gloss_token -> {clip_path, frame_count, ...}
-│   └── clips/                     # int8 per-gloss keypoint clips (.npz)
-├── stitching/
-│   ├── stitch.py                  # concatenate clips with handoff frames
-│   ├── interpolate.py             # linear / spline blending between glosses
-│   └── timing.py                  # per-gloss duration, pauses, emphasis
-├── renderer/
-│   └── ios_contract.md            # input format the SwiftUI renderer consumes
 ├── asr/
-│   └── contract.md                # SFSpeechRecognizer continuous-mode contract
-├── tests/
-│   ├── test_index.py
-│   └── test_stitch.py
-└── notebooks/
-    └── render_preview.ipynb       # Python-side preview (matplotlib) for debugging only
+│   └── contract.md                  # SFSpeechRecognizer continuous-mode contract
+├── renderer/
+│   └── ios_contract.md              # keypoint-stream format the iOS renderer consumes
+├── llm_export/                      # LoRA → LiteRT/TFLite staging (artefacts git-ignored)
+└── pose_library/
+    ├── build_index.py               # ingest Motion-S → quantised per-gloss clips (~31 demo glosses)
+    ├── build_full_library.py        # alignment-derived library (~406 glosses)
+    ├── build_single_gloss.py        # iterate one gloss at a time
+    └── pick_best_takes.py           # curate exemplars per gloss
+```
+
+Stitching / blending is implemented in Swift in `../mobile-app/sema/sema/Generation/Stitcher.swift` rather than Python — the avatar renderer composes clips at runtime, so the Python side stops at the indexed clip library.
+
+**Not in git** (regenerated locally per workstation; see `../.gitignore`):
+
+```
+generation/pose_library/
+├── clips/                           # int8 per-gloss keypoint clips (.npz)
+├── full/                            # full ~406-gloss library output
+├── rotations/                       # BVH-derived rotation streams
+├── index.json                       # gloss_token → {clip_path, frame_count, …}
+├── retarget_to_target.py            # source-skeleton → target-skeleton retargeter
+└── target_bind_pose.json            # cached bind pose
 ```
 
 ## Inputs and outputs
@@ -52,3 +58,4 @@ generation/
 ## Dataset
 
 The pose-clip database is derived from **Motion-S** BVH (forward-kinematics → MediaPipe-equivalent 47-joint layout, the same projection used by `../recognition/data/bvh_to_landmarks.py`). One clip per gloss; if a gloss appears multiple times in Motion-S, we select the longest cleanly-segmented exemplar.
+

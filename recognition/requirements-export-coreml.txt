@@ -1,3 +1,0 @@
-# CoreML export deps. Runs on macOS (Apple Silicon and Intel).
--r requirements.txt
-coremltools>=7

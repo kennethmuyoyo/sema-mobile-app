@@ -1,6 +1,0 @@
-# LiteRT export deps. Use a Python 3.11 Linux environment.
-# torch_xla (a transitive dep of ai-edge-torch) does not have macOS wheels,
-# and the latest ai-edge-torch wheels require Python >= 3.10.
--r requirements.txt
-ai-edge-torch>=0.3
-tensorflow

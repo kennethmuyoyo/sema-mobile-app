@@ -11,7 +11,11 @@ import SwiftUI
 struct semaApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            if TestEnvironment.isActive {
+                Color.black.ignoresSafeArea()
+            } else {
+                ContentView()
+            }
         }
     }
 }

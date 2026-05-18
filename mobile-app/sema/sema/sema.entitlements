@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+        Increased memory limit. Without this, iOS caps app resident memory
+        around ~3 GB and jetsam kills us with code 9 when llama.cpp's Gemma
+        mmap, MediaPipe's TFLite contexts, and the pose-library LRU cache
+        all live in process at once. With it, supported devices (A14+
+        iPhones, M-series iPads) raise the cap toward 5-6 GB so the full
+        stack fits.
+        Docs: https://developer.apple.com/documentation/bundleresources/entitlements/com_apple_developer_kernel_increased-memory-limit
+    -->
+    <key>com.apple.developer.kernel.increased-memory-limit</key>
+    <true/>
+
+    <!--
+        Extended virtual addressing. Pairs with the increased memory limit:
+        lets llama.cpp's mmap region span more than 4 GB of virtual address
+        space, which we need because the GGUF + KV cache + activation
+        buffers can exceed that even when resident memory is much smaller.
+    -->
+    <key>com.apple.developer.kernel.extended-virtual-addressing</key>
+    <true/>
+</dict>
+</plist>

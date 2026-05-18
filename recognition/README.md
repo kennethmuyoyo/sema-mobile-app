@@ -37,40 +37,46 @@ To narrow the sim2real gap between BVH-projected training features and real Medi
 
 Augmentations apply during training only; eval runs with the augmentation off.
 
-## Intended layout
+## Repo layout
+
+The training pipeline (`data/`, `training/`, `checkpoints/`) lives on the training workstation only and is excluded from git by `../.gitignore`. What ships in this folder is the **contract** — configs, export script, eval harness, tests, and this README — so that downstream consumers (iOS app, CI) have a stable interface to the recogniser without dragging the training loop into every checkout.
 
 ```
 recognition/
 ├── README.md
+├── BENCHMARK.md
 ├── requirements.txt                    # core: torch, numpy, pandas, pyyaml, tqdm
-├── requirements-export-coreml.txt      # adds coremltools (installs on macOS)
-├── requirements-export-litert.txt      # optional: ai-edge-torch + tensorflow (Linux/Py>=3.11)
 ├── configs/
 │   ├── transformer_base.yaml           # primary architecture
 │   └── lstm_fallback.yaml              # SLRNet-style baseline
+├── convert_to_litert.py                # PyTorch → LiteRT .tflite (Android-fallback)
+├── export/
+│   └── to_coreml_v11.py                # PyTorch → CoreML .mlpackage (primary, v11 phonological)
+├── eval/
+│   ├── real_camera_smoke.md            # deployment gate: real MediaPipe iOS clips
+│   ├── replay_bvh.py                   # replay BVH features through the model
+│   └── replay_litert.py                # replay through the exported LiteRT graph
+└── tests/
+    └── test_dataset.py                 # shape/dtype sanity
+```
+
+**Not in git** (kept locally on the training box):
+
+```
+recognition/
 ├── data/
 │   ├── build_vocab.py                  # parse train.csv → gloss vocab + splits
 │   ├── bvh_to_landmarks.py             # BVH skeleton → normalized 47-joint landmark vectors
 │   ├── augment.py                      # MediaPipe-noise model (train-only)
 │   ├── dataset.py                      # PyTorch Dataset + padded collate (+ optional RVQ-aux targets)
+│   ├── align_sentences.py              # gloss ↔ sentence alignment for translation pairs
 │   ├── vocab/gloss_vocab.json          # generated; shared with ../gemma-glossing/
 │   ├── splits/{train,val}.txt          # generated; clip ids per split
 │   └── landmarks_meta.json             # generated; joint layout + normalization stats
-├── models/
-│   ├── transformer_encoder.py          # primary: encoder + CTC head (+ optional RVQ-aux head)
-│   └── lstm_tagger.py                  # fallback, SLRNet-style stacked LSTM
 ├── training/
 │   ├── train.py                        # CTC (+ optional aux CE) training loop
 │   └── decode.py                       # greedy CTC decode + WER
-├── export/
-│   ├── to_coreml.py                    # PyTorch → CoreML .mlpackage (primary)
-│   └── to_litert.py                    # PyTorch → LiteRT .tflite (retained, optional)
-├── eval/
-│   └── real_camera_smoke.md            # deployment gate: real MediaPipe iOS clips
-├── scripts/
-│   └── smoke_train.sh                  # bvh→landmarks → vocab → 200-step smoke run
-└── tests/
-    └── test_dataset.py                 # shape/dtype sanity
+└── checkpoints/                        # trained weights (DVC-tracked)
 ```
 
 ## References
@@ -93,6 +99,8 @@ The pipeline shape (MediaPipe Holistic → small temporal classifier) follows th
 
 ## Quick start (local smoke test)
 
+The smoke flow runs on a workstation that has `data/` and `training/` locally (these are git-ignored — fetch the data via `dvc pull` and keep the Python sources alongside this folder):
+
 ```bash
 cd recognition
 python3 -m venv .venv
@@ -108,14 +116,14 @@ The `--smoke` flag runs 200 steps on a small subset and confirms data loading, a
 ## Export to CoreML (local Mac)
 
 ```bash
-.venv/bin/pip install -r requirements-export-coreml.txt
-.venv/bin/python -m export.to_coreml \
+.venv/bin/pip install coremltools
+.venv/bin/python -m export.to_coreml_v11 \
     --ckpt checkpoints/transformer_base/best.pt \
-    --out  ../mobile-app/Sema/Models/gloss_tagger.mlpackage \
+    --out  ../mobile-app/sema/sema/Resources/ksl_model.mlpackage \
     --seq-len 256
 ```
 
-The script wraps the model with a fixed-length input shape, traces with `coremltools.convert`, writes an `.mlpackage`, runs parity vs the PyTorch forward, and writes a `gloss_tagger.vocab.json` sidecar.
+The script wraps the model with a fixed-length input shape, traces with `coremltools.convert`, writes an `.mlpackage`, runs parity vs the PyTorch forward, and writes a `ksl_model.metadata.json` sidecar.
 
 ## Deployment gate
 

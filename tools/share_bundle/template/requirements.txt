@@ -1,0 +1,12 @@
+# Heavy ML stack for SMPL-X rendering + MediaPipe Holistic landmark extraction.
+# Wheel sizes total roughly 3 GB on first install.
+
+numpy>=1.24
+scipy>=1.10
+torch>=2.0
+opencv-python>=4.8
+pyrender>=0.1.45
+mediapipe>=0.10.20
+smplx>=0.1.28
+trimesh>=4.0
+PyOpenGL==3.1.7

@@ -2,12 +2,12 @@
 # remote (`r2`), so teammates can `dvc pull` and skip the rebuild.
 #
 # Run:
-#   .venv/bin/dvc repro                          # builds anything stale
-#   .venv/bin/dvc repro export_coreml            # builds one stage + its deps
-#   .venv/bin/dvc push                           # uploads new cached outputs
+#   recognition/.venv/bin/dvc repro                     # builds anything stale
+#   recognition/.venv/bin/dvc repro export_coreml       # builds one stage + its deps
+#   recognition/.venv/bin/dvc push                      # uploads new cached outputs
 #
 # `wdir` is omitted — every cmd `cd`s into the relevant folder, and every
-# dep/out path is repo-root-relative. Keeps the file easy to read.
+# dep/out path is repo-root-relative.
 
 stages:
   landmarks:
@@ -50,18 +50,40 @@ stages:
       - recognition/checkpoints/transformer_base
 
   export_coreml:
-    desc: Convert the best checkpoint to CoreML .mlpackage for the iOS bundle.
+    desc: Convert the best checkpoint to CoreML .mlpackage for the iOS bundle (seq_len 64 — the live recognizer window).
     cmd: >
       cd recognition && .venv/bin/python -m export.to_coreml
       --ckpt checkpoints/transformer_base/best.pt
-      --out  ../mobile-app/Sema/Models/gloss_tagger.mlpackage
-      --seq-len 256
+      --out  ../mobile-app/sema/sema/Models/gloss_tagger.mlpackage
+      --seq-len 64
     deps:
       - recognition/checkpoints/transformer_base/best.pt
       - recognition/export/to_coreml.py
       - recognition/models/transformer_encoder.py
       - recognition/data/landmarks_meta.json
     outs:
-      - mobile-app/Sema/Models/gloss_tagger.mlpackage
-      - mobile-app/Sema/Models/gloss_tagger.vocab.json
-      - mobile-app/Sema/Models/gloss_tagger.landmarks_meta.json
+      - mobile-app/sema/sema/Models/gloss_tagger.mlpackage
+      - mobile-app/sema/sema/Models/gloss_tagger.vocab.json
+      - mobile-app/sema/sema/Models/gloss_tagger.landmarks_meta.json
+
+  pose_library:
+    desc: Build the on-device pose-clip database (equal-slicing v0).
+    cmd: recognition/.venv/bin/python generation/pose_library/build_index.py
+    deps:
+      - generation/pose_library/build_index.py
+      - data/landmarks
+      - data/train.csv
+      - recognition/data/vocab/gloss_vocab.json
+    outs:
+      - generation/pose_library/index.json
+      - generation/pose_library/clips
+      - mobile-app/sema/sema/Resources/PoseLibrary
+
+  mediapipe_assets:
+    desc: Fetch MediaPipe iOS landmarker .task files (pinned versions) into the app bundle.
+    cmd: bash mobile-app/sema/sema/scripts/fetch_mediapipe_tasks.sh
+    deps:
+      - mobile-app/sema/sema/scripts/fetch_mediapipe_tasks.sh
+    outs:
+      - mobile-app/sema/sema/Resources/pose_landmarker_full.task
+      - mobile-app/sema/sema/Resources/hand_landmarker.task

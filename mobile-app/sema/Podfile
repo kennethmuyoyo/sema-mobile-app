@@ -1,0 +1,33 @@
+platform :ios, '17.0'
+use_frameworks!
+inhibit_all_warnings!
+
+target 'sema' do
+  # MediaPipe Tasks Vision — pose + hand landmarkers, used by HolisticLandmarker.swift.
+  # iOS Vision tasks are only distributed via CocoaPods (no official SPM package).
+  pod 'MediaPipeTasksVision', '~> 0.10'
+
+  # Recognizer is now CoreML (`ksl_model.mlpackage`) instead of TFLite —
+  # MediaPipeTasksVision bundles its own TFLite and force-loads its
+  # symbols, so a second `TensorFlowLiteSwift` framework produced 48
+  # duplicate-symbol linker errors. CoreML is built into iOS, has zero
+  # pod conflicts, runs on the Neural Engine, and is loaded by
+  # `ML/CoreMLGlossTagger.swift`.
+
+  # On-device Gemma 4 E2B (.litertlm) runs through the LiteRT-LM Swift package,
+  # NOT a Pod. Added in Xcode via File -> Add Package Dependencies:
+  #   https://github.com/google-ai-edge/LiteRT-LM.git  @ exact 0.11.0
+  # Pulled the older MediaPipeTasksGenAI / MediaPipeTasksGenAIC pods — they were
+  # for the legacy `.task` Gemma bundle that we no longer ship.
+
+  # Add other CocoaPods deps here if needed. Spine 2D, when you flip it on,
+  # comes in via SPM — leave it out of the Podfile.
+end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '17.0'
+    end
+  end
+end

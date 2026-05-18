@@ -2,21 +2,34 @@
 //  ContentView.swift
 //  sema
 //
-//  Created by Bishal Jena on 13/05/26.
-//
 
 import SwiftUI
 
 struct ContentView: View {
-    @State private var coordinator = PipelineCoordinator()
-    @State private var camera = CameraSessionController()
+    @State private var orchestrator = ConversationOrchestrator()
+    @State private var volumeShortcuts = VolumeShortcutDetector()
 
     var body: some View {
-        CallScreenView(coordinator: coordinator, camera: camera)
-        .onDisappear {
-            coordinator.pause()
-            camera.stop()
-        }
+        ConversationScreenView(orchestrator: orchestrator)
+            .background {
+                HiddenVolumeHUDView()
+                    .frame(width: 1, height: 1)
+                    .allowsHitTesting(false)
+            }
+            .onAppear {
+                guard !TestEnvironment.skipsPipelineStartup else { return }
+                orchestrator.bootstrap()
+                volumeShortcuts.start()
+            }
+            .onDisappear {
+                volumeShortcuts.stop()
+                orchestrator.pause()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .shortcutStartConversation)) { _ in
+                if orchestrator.canStart, !orchestrator.isLive {
+                    orchestrator.start()
+                }
+            }
     }
 }
 

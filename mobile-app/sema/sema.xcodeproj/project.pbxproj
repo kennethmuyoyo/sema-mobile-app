@@ -6,8 +6,32 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		4D70B7095DE847B7DA2B2CB2 /* Pods_sema.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 60043C089D15B1613F1A1975 /* Pods_sema.framework */; };
+		BEADAC6B2FB9CDA500C318C1 /* llama.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = BEADAC6A2FB9CDA500C318C1 /* llama.xcframework */; };
+		BEADAC6C2FB9CDA500C318C1 /* llama.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BEADAC6A2FB9CDA500C318C1 /* llama.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		BEADAC6D2FB9CDA500C318C1 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				BEADAC6C2FB9CDA500C318C1 /* llama.xcframework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		60043C089D15B1613F1A1975 /* Pods_sema.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_sema.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		B230BDF92FB4A34C00449DFA /* sema.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = sema.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		BB400E2499713E2D92F33521 /* Pods-sema.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-sema.release.xcconfig"; path = "Target Support Files/Pods-sema/Pods-sema.release.xcconfig"; sourceTree = "<group>"; };
+		BEADAC6A2FB9CDA500C318C1 /* llama.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = llama.xcframework; path = Frameworks/llama.xcframework; sourceTree = "<group>"; };
+		CB9CFB395A01818F856851CA /* Pods-sema.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-sema.debug.xcconfig"; path = "Target Support Files/Pods-sema/Pods-sema.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -23,17 +47,30 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BEADAC6B2FB9CDA500C318C1 /* llama.xcframework in Frameworks */,
+				4D70B7095DE847B7DA2B2CB2 /* Pods_sema.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0DFC19EDC65097AF72223E60 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				BEADAC6A2FB9CDA500C318C1 /* llama.xcframework */,
+				60043C089D15B1613F1A1975 /* Pods_sema.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		B230BDF02FB4A34C00449DFA = {
 			isa = PBXGroup;
 			children = (
 				B230BDFB2FB4A34C00449DFA /* sema */,
 				B230BDFA2FB4A34C00449DFA /* Products */,
+				DD3B08A3B91A92CD39C41159 /* Pods */,
+				0DFC19EDC65097AF72223E60 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -45,6 +82,15 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		DD3B08A3B91A92CD39C41159 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				CB9CFB395A01818F856851CA /* Pods-sema.debug.xcconfig */,
+				BB400E2499713E2D92F33521 /* Pods-sema.release.xcconfig */,
+			);
+			path = Pods;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -52,9 +98,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = B230BE042FB4A34D00449DFA /* Build configuration list for PBXNativeTarget "sema" */;
 			buildPhases = (
+				E4415B53419F00C720C2D3D1 /* [CP] Check Pods Manifest.lock */,
 				B230BDF52FB4A34C00449DFA /* Sources */,
 				B230BDF62FB4A34C00449DFA /* Frameworks */,
 				B230BDF72FB4A34C00449DFA /* Resources */,
+				BEADAC6D2FB9CDA500C318C1 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -64,8 +112,6 @@
 				B230BDFB2FB4A34C00449DFA /* sema */,
 			);
 			name = sema;
-			packageProductDependencies = (
-			);
 			productName = sema;
 			productReference = B230BDF92FB4A34C00449DFA /* sema.app */;
 			productType = "com.apple.product-type.application";
@@ -113,6 +159,31 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		E4415B53419F00C720C2D3D1 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-sema-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		B230BDF52FB4A34C00449DFA /* Sources */ = {
@@ -248,31 +319,38 @@
 		};
 		B230BE052FB4A34D00449DFA /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = CB9CFB395A01818F856851CA /* Pods-sema.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = sema/sema.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = PZVF7AX868;
+				DEVELOPMENT_TEAM = H9J3TN99GS;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Sema;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Sema uses the front camera to recognize sign language during live translation.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Sema uses the microphone to translate speech into sign language.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Sema recognizes speech so it can translate spoken language into signs.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UIFileSharingEnabled = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.bishaljena.sema;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.sema-gemma.ksl.app";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
@@ -285,31 +363,38 @@
 		};
 		B230BE062FB4A34D00449DFA /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = BB400E2499713E2D92F33521 /* Pods-sema.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = sema/sema.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = PZVF7AX868;
+				DEVELOPMENT_TEAM = H9J3TN99GS;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Sema;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Sema uses the front camera to recognize sign language during live translation.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Sema uses the microphone to translate speech into sign language.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Sema recognizes speech so it can translate spoken language into signs.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UIFileSharingEnabled = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.bishaljena.sema;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.sema-gemma.ksl.app";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
